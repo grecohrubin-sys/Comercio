@@ -1,0 +1,165 @@
+---
+title: "Nearshoring y Reconfiguración de Cadenas de Suministro"
+subtitle: "Un Análisis Cuantitativo con el Modelo Eaton-Kortum (2002)"
+shorttitle: "Eaton-Kortum"
+author: "Greco Hernández Rubin"
+institute: "Universidad Panamericana — Licenciatura en Economía"
+shortinstitute: "Univ. Panamericana"
+date: "11 de octubre de 2026"
+output:
+  beamer_presentation:
+    theme: "Madrid"
+    colortheme: "default"
+    latex_engine: xelatex
+    slide_level: 2
+    keep_tex: false
+    fig_caption: false
+header-includes:
+  - \usepackage{booktabs}
+  - \setbeamertemplate{navigation symbols}{}
+  - \AtBeginDocument{\author[G. Hernández Rubin]{Greco Hernández Rubin}}
+lang: es
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(knitr)
+
+theta <- 4
+res <- read_csv("outputs/eaton_kortum_resultados.csv", show_col_types = FALSE) %>%
+  mutate(
+    pais = recode(iso3, MEX = "México", POL = "Polonia", USA = "Estados Unidos",
+                  JPN = "Japón", KOR = "Corea del Sur", DEU = "Alemania"),
+    hub = iso3 %in% c("MEX", "POL")
+  ) %>%
+  arrange(desc(Gains_pct))
+
+g   <- function(code, col) res[[col]][res$iso3 == code]
+pct <- function(x) sprintf("%.2f\\%%", x)
+```
+
+## Motivación
+
+- Las tensiones geopolíticas, la pandemia y la política comercial han llevado a las empresas a **relocalizar producción más cerca de sus mercados finales** (*nearshoring*).
+- México y Polonia son hubs estratégicos por su cercanía a EE. UU. y Europa Occidental, respectivamente, y por su integración al **T-MEC** y a la **Unión Europea**.
+- Las cadenas globales dependen de insumos intermedios que cruzan fronteras; por ello, la integración comercial puede reducir costos y sostener la producción.
+
+\medskip
+
+**Pregunta de investigación**
+
+> ¿Qué tan grandes son las ganancias del comercio ($G_i$) de los hubs de nearshoring frente a las economías industriales tradicionales?
+
+## Marco teórico: Eaton-Kortum (2002)
+
+- Productividad por bien $z_i(j)\sim$ Fréchet: $\Pr[z\le x]=e^{-T_i x^{-\theta}}$.
+- Cada país compra cada bien al proveedor más barato, con costos iceberg $d_{ni}\ge 1$.
+- Cuota de gasto del país $n$ en bienes del país $i$:
+
+$$\pi_{ni}=\frac{T_i\,(c_i d_{ni})^{-\theta}}{\sum_{k}T_k\,(c_k d_{nk})^{-\theta}}$$
+
+- Índice de precios: $p_n=\gamma\,\Phi_n^{-1/\theta}$.
+
+## Fórmula ACR (2012) y parametrización
+
+\small
+**Insumos intermedios:** $c=w^{\beta}P^{1-\beta}$ ($\beta$ trabajo, $1-\beta$ insumos). Con $\Phi=Tc^{-\theta}/\pi_{ii}$ y $P=\gamma\Phi^{-1/\theta}$:
+$$P^{\beta}\propto w^{\beta}\pi_{ii}^{1/\theta}\;\Rightarrow\;P_m\propto w\,\pi_{ii}^{\frac{1}{\beta\theta}}$$
+Si manufacturas pesan $\alpha$ en $P$: $\dfrac{W}{P}\propto\pi_{ii}^{-\frac{\alpha}{\beta\theta}}$, con $\dfrac{\alpha}{\beta\theta}=\dfrac{0.2}{0.3\times 4}=\dfrac{1}{6}$
+$$\boxed{\,G_i=100\cdot\left[\pi_{ii}^{-1/6}-1\right]\,}$$
+
+- $G_i$: **ganancia en ingreso/salario real** ($W/P$) vs. autarquía, en %.
+- $\pi_{ii}$: cuota de gasto doméstico; $\theta=4$.
+
+\medskip
+\textbf{Enfoque metodológico:} Estadístico Suficiente (ACR, 2012 / Eaton-Kortum, 2002); calibración contrafactual con datos de 2024 que compara el bienestar observado con el de autarquía.
+
+## Fuentes de datos y limpieza
+
+\small
+- **BACI 2024 (CEPII):** $X_i$, $M_i$ por país, de miles de USD a USD.
+- **Criterio de agrupación (BACI):** HS 2022 a 6 dígitos; manufacturas = correspondencia HS $\to$ ISIC Rev. 4, divisiones 10--33 (actividad C de OECD STAN).
+- **OECD STAN (2025):** producción manufacturera $Y_i$ (actividad C, medida P1, precios corrientes), último año hasta 2024.
+- **Banco Mundial:** tipo de cambio anual promedio para pasar $Y_i$ a USD.
+- **Construcción:** $D_i=Y_i+M_i-X_i$; $X_{ii}=Y_i-X_i$; $\pi_{ii}=X_{ii}/D_i$.
+- **Limpieza:** se eliminó Alemania Federal (histórica) del catálogo BACI, se filtró una sola serie OECD y se armonizó la moneda.
+
+## Resultados
+
+```{r tabla, results='asis'}
+res %>%
+  transmute(
+    País = pais,
+    `$Y_i$` = Y_i / 1e9,
+    `$X_i$` = X_i / 1e9,
+    `$M_i$` = M_i / 1e9,
+    `$\\pi_{ii}$` = pi_ii,
+    `$G_i$ (\\%)` = Gains_pct
+  ) %>%
+  kable(format = "latex", booktabs = TRUE, escape = FALSE,
+        digits = c(0, 0, 0, 0, 3, 2), format.args = list(big.mark = ",")) %>%
+  cat()
+```
+
+\vspace{2mm}
+{\scriptsize $Y_i$, $X_i$, $M_i$ en miles de millones de USD. Fuente: BACI 2024, OECD STAN 2025, cálculos propios. Para Corea, $Y_i$ es de 2023.}
+
+## Visualización 1: Ganancias del comercio
+
+\centering
+```{r fig1, out.height="0.68\\textheight"}
+include_graphics(normalizePath("outputs/gains_from_trade.png", winslash = "/"))
+```
+
+\raggedright
+**Polonia** lidera con `r pct(g("POL","Gains_pct"))`; **México** (`r pct(g("MEX","Gains_pct"))`) supera a EE. UU., Corea y Japón, y queda por debajo de Alemania.
+
+## Visualización 2: Cuota doméstica y bienestar
+
+\centering
+```{r fig2, out.height="0.68\\textheight"}
+include_graphics(normalizePath("outputs/home_share_vs_gains.png", winslash = "/"))
+```
+
+\raggedright
+Relación **inversa y convexa**: menor $\pi_{ii}$ implica mayores ganancias. Los puntos están sobre la curva porque $G_i$ se calcula con esa fórmula.
+
+## Discusión geoeconómica
+
+**Hubs de nearshoring** (México, Polonia)
+
+- Cuota doméstica baja: `r paste0(sprintf("%.0f%%", 100*res$pi_ii[res$hub]), collapse = " y ")` ($\pi_{ii}$ de `r paste(res$pais[res$hub], collapse = " y ")`).
+- Integración profunda con un bloque (T-MEC, UE) y alto contenido importado.
+
+**Economías industriales tradicionales** (EE. UU., Alemania, Japón, Corea)
+
+- Mercados internos grandes y cadenas más verticales: ganancias entre `r pct(min(res$Gains_pct[!res$hub]))` y `r pct(max(res$Gains_pct[!res$hub]))`.
+- Alemania es la excepción, muy abierta dentro del mercado único europeo.
+
+**Salvedad:** las exportaciones brutas incluyen insumos importados, por lo que las ganancias de los hubs podrían estar sobrestimadas frente a una medición en valor agregado.
+
+## Conclusiones
+
+- Con exponente $\alpha/(\beta\theta)=1/6$, las ganancias en ingreso real van de `r pct(min(res$Gains_pct))` a `r pct(max(res$Gains_pct))`.
+- Los hubs de nearshoring tienen una mayor dependencia del comercio, y por lo tanto más que ganar o perder con él.
+- Los resultados son estáticos: no miden el efecto causal del nearshoring.
+
+## Recomendaciones para México en el T-MEC
+
+1. **Certidumbre del T-MEC:** proteger la revisión del tratado y las reglas de origen.
+2. **Menores costos de comercio** ($d_{ni}$): logística, cruces fronterizos, aduanas digitales.
+3. **Más valor agregado nacional:** encadenar a pymes proveedoras con financiamiento y capacitación.
+4. **Cuellos de botella:** energía, agua, parques industriales y talento técnico.
+5. **Diversificar socios** para reducir la exposición a un solo mercado.
+6. **Compensar a los perdedores** del ajuste con políticas de empleo y reconversión.
+
+## Referencias
+
+{\footnotesize
+- Arkolakis, Costinot y Rodríguez-Clare (2012). *New Trade Models, Same Old Gains?* AER 102(1).
+- Eaton y Kortum (2002). *Technology, Geography, and Trade.* Econometrica 70(5).
+- Gaulier y Zignago (2010). *BACI.* CEPII WP 2010-23.
+- OECD (2025). *STAN Database for Structural Analysis.*
+- Simonovska y Waugh (2014). *The Elasticity of Trade.* JIE 92(1).
+}
